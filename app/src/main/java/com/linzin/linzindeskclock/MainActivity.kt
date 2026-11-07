@@ -3921,6 +3921,12 @@ fun AnalogClockFace(
     val painterAbw3 = painterResource(id = R.drawable.abw_3)
     val painterAbw9 = painterResource(id = R.drawable.abw_9)
 
+    val painterTtn1 = painterResource(id = R.drawable.ttn_1)
+    val painterTtn2 = painterResource(id = R.drawable.ttn_2)
+    val painterTtn6 = painterResource(id = R.drawable.ttn_6)
+    val painterTtn3 = painterResource(id = R.drawable.ttn_3)
+    val painterTtn9 = painterResource(id = R.drawable.ttn_9)
+
     val painterOet12 = painterResource(id = R.drawable.oet_12)
     val painterOet6 = painterResource(id = R.drawable.oet_6)
     val painterOet3 = painterResource(id = R.drawable.oet_3)
@@ -4465,10 +4471,11 @@ fun AnalogClockFace(
                         translate(left = x - digitWidth / 2f, top = y - digitHeight / 2f) { with(painter) { draw(size = Size(digitWidth, digitHeight), colorFilter = ColorFilter.tint(Color.White)) } }
                     }
                     val numberInset = 64.dp.toPx()
-                    drawNumber(painterAbw12, cx, numberInset)
-                    drawNumber(painterAbw6, cx, height - numberInset)
-                    drawNumber(painterAbw9, numberInset, cy)
-                    drawNumber(painterAbw3, width - numberInset, cy)
+                    drawNumber(painterTtn1, cx - 18.dp.toPx(), numberInset)
+                     drawNumber(painterTtn2, cx + 18.dp.toPx(), numberInset)
+                    drawNumber(painterTtn6, cx, height - numberInset)
+                    drawNumber(painterTtn9, numberInset, cy)
+                    drawNumber(painterTtn3, width - numberInset, cy)
                     val hourRad = (hourAngleDeg * (PI / 180f)).toFloat()
                     val minRad = (minAngleDeg * (PI / 180f)).toFloat()
                     drawLine(handWhite, Offset(cx, cy), Offset(cx + baseRadius * 0.44f * cos(hourRad), cy + baseRadius * 0.44f * sin(hourRad)), 8.dp.toPx(), StrokeCap.Round)
