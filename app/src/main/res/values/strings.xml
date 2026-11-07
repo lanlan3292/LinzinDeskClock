@@ -73,6 +73,7 @@
     <string name="pref_hinge_title">Show Hinge Angle</string>
     <string name="pref_hinge_desc">Show real-time fold angle at bottom-right</string>
     <string name="pref_language_title">Language</string>
+    <string name="language_traditional_follow_system">Follow System</string>
 
     <!-- Settings Dialog: Screen Protection, Brightness & Timeout -->
     <string name="pref_smooth_second_title">Smooth Second Hand</string>

@@ -74,6 +74,7 @@
     <string name="pref_hinge_title">显示转轴角度 (Hinge)</string>
     <string name="pref_hinge_desc">在时钟右下角显示实时转轴折叠角度</string>
     <string name="pref_language_title">语言</string>
+    <string name="language_traditional_follow_system">跟随系统</string>
 
     <!-- 设置对话框：屏幕防护、亮度与休眠控制 -->
     <string name="pref_smooth_second_title">秒针平滑转动</string>

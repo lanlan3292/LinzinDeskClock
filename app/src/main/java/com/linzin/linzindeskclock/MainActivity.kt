@@ -7,6 +7,7 @@ import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Resources
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Color as AndroidGraphicsColor
@@ -2016,6 +2017,7 @@ fun ClockSettingsDialog(
                                 Text(stringResource(R.string.pref_language_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                                 Text(
                                     text = when (languageTag) {
+                                        "system" -> stringResource(R.string.language_traditional_follow_system)
                                         "zh-TW" -> "繁體中文"
                                         "zh-CN" -> "简体中文"
                                         "en" -> "English"
@@ -2027,8 +2029,9 @@ fun ClockSettingsDialog(
                             }
                             Text(
                                 text = when (languageTag) {
-                                    "zh-TW" -> "繁中"
-                                    "zh-CN" -> "简中"
+                                    "system" -> stringResource(R.string.language_traditional_follow_system)
+                                    "zh-TW" -> "繁體中文"
+                                    "zh-CN" -> "简体中文"
                                     "en" -> "English"
                                     else -> "Unknown"
                                 },
@@ -2040,8 +2043,12 @@ fun ClockSettingsDialog(
                             expanded = languageMenuExpanded,
                             onDismissRequest = { languageMenuExpanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("繁體中文") },
+                             DropdownMenuItem(
+                                 text = { Text("Follow system") },
+                                 onClick = { languageMenuExpanded = false; onLanguageChange("system") }
+                             )
+                             DropdownMenuItem(
+                                 text = { Text("繁體中文") },
                                 onClick = { languageMenuExpanded = false; onLanguageChange("zh-TW") }
                             )
                             DropdownMenuItem(
@@ -2552,7 +2559,11 @@ fun InitialScreen(
 // ==========================================
 
 fun systemLanguageTag(context: Context): String {
-    val locale = context.resources.configuration.locales[0]
+    val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.getSystemService(android.app.LocaleManager::class.java)?.systemLocales?.get(0)
+    } else {
+        Resources.getSystem().configuration.locales[0]
+    } ?: Locale.getDefault()
     return when {
         locale.language.equals("zh", ignoreCase = true) &&
             (locale.country.equals("CN", ignoreCase = true) || locale.country.equals("SG", ignoreCase = true)) -> "zh-CN"
@@ -2592,7 +2603,7 @@ fun DeskClockScreen(
     var showBattery by remember { mutableStateOf(prefs.getBoolean("pref_show_battery", true)) }
     var showCornerDate by remember { mutableStateOf(prefs.getBoolean("pref_show_corner_date", true)) }
     var smoothSecondHand by remember { mutableStateOf(prefs.getBoolean("pref_smooth_second_hand", false)) }
-    var languageTag by remember { mutableStateOf(prefs.getString("pref_language_tag", null) ?: defaultLanguageTag) }
+    var languageTag by remember { mutableStateOf(prefs.getString("pref_language_tag", "system") ?: "system") }
     var showHingeAngle by remember { mutableStateOf(prefs.getBoolean("pref_show_hinge_angle", false)) }
     var manualBrightness by remember { mutableStateOf(prefs.getBoolean("pref_manual_brightness", false)) }
     var brightnessValue by remember { mutableFloatStateOf(prefs.getFloat("pref_brightness_val", 0.6f)) }
@@ -3018,7 +3029,12 @@ fun DeskClockScreen(
                  onLanguageChange = { selectedTag ->
                      languageTag = selectedTag
                      prefs.edit().putString("pref_language_tag", selectedTag).apply()
-                     val locale = Locale.forLanguageTag(selectedTag)
+                     val appliedLanguageTag = if (selectedTag == "system") {
+                         systemLanguageTag(context)
+                     } else {
+                         selectedTag
+                     }
+                     val locale = Locale.forLanguageTag(appliedLanguageTag)
                      Locale.setDefault(locale)
                      val configuration = context.resources.configuration.apply { setLocale(locale) }
                      context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
@@ -5049,7 +5065,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("desk_clock_prefs", Context.MODE_PRIVATE)
         val savedLanguageTag = prefs.getString("pref_language_tag", null)
-        val languageTag = savedLanguageTag ?: systemLanguageTag(this)
+        val languageTag = savedLanguageTag?.takeUnless { it == "system" } ?: systemLanguageTag(this)
         val locale = Locale.forLanguageTag(languageTag)
         Locale.setDefault(locale)
         resources.updateConfiguration(resources.configuration.apply { setLocale(locale) }, resources.displayMetrics)
