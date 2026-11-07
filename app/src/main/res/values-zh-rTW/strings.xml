@@ -70,6 +70,7 @@
     <string name="pref_corner_date_desc">在時鐘左下角顯示當前日期星期標籤</string>
     <string name="pref_hinge_title">顯示轉軸角度 (Hinge)</string>
     <string name="pref_hinge_desc">在時鐘右下角顯示即時轉軸摺疊角度</string>
+    <string name="pref_language_title">語言</string>
 
     <!-- 設定對話框：螢幕防護、亮度與休眠控制 -->
     <string name="pref_smooth_second_title">秒針平滑轉動</string>

@@ -80,6 +80,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -1654,6 +1656,8 @@ fun ClockSettingsDialog(
     onShowCornerDateChange: (Boolean) -> Unit,
     smoothSecondHand: Boolean,
     onSmoothSecondHandChange: (Boolean) -> Unit,
+    languageTag: String,
+    onLanguageChange: (String) -> Unit,
     showHingeAngle: Boolean,
     onShowHingeAngleChange: (Boolean) -> Unit,
     hasHingeSensor: Boolean = true,
@@ -1995,6 +1999,60 @@ fun ClockSettingsDialog(
                             onCheckedChange = null,
                             enabled = hasHingeSensor
                         )
+                    }
+
+                    var languageMenuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { languageMenuExpanded = true }
+                                .padding(vertical = 12.dp, horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.pref_language_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                                Text(
+                                    text = when (languageTag) {
+                                        "zh-TW" -> "繁體中文"
+                                        "zh-CN" -> "简体中文"
+                                        "en" -> "English"
+                                        else -> "Unknown"
+                                    },
+                                    fontSize = 13.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            Text(
+                                text = when (languageTag) {
+                                    "zh-TW" -> "繁中"
+                                    "zh-CN" -> "简中"
+                                    "en" -> "English"
+                                    else -> "Unknown"
+                                },
+                                color = Color.White,
+                                fontSize = 15.sp
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = languageMenuExpanded,
+                            onDismissRequest = { languageMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("繁體中文") },
+                                onClick = { languageMenuExpanded = false; onLanguageChange("zh-TW") }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("简体中文") },
+                                onClick = { languageMenuExpanded = false; onLanguageChange("zh-CN") }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("English") },
+                                onClick = { languageMenuExpanded = false; onLanguageChange("en") }
+                            )
+                        }
                     }
 
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF33333A)))
@@ -2493,6 +2551,16 @@ fun InitialScreen(
 // 7. 桌面時鐘主介面 (包含單/雙區塊編排)
 // ==========================================
 
+fun systemLanguageTag(context: Context): String {
+    val locale = context.resources.configuration.locales[0]
+    return when {
+        locale.language.equals("zh", ignoreCase = true) &&
+            (locale.country.equals("CN", ignoreCase = true) || locale.country.equals("SG", ignoreCase = true)) -> "zh-CN"
+        locale.language.equals("zh", ignoreCase = true) -> "zh-TW"
+        else -> "en"
+    }
+}
+
 @Composable
 fun DeskClockScreen(
     foldState: String = "--°",
@@ -2508,7 +2576,7 @@ fun DeskClockScreen(
     val currentLocationStr = stringResource(R.string.current_location)
 
     val prefs = remember { context.getSharedPreferences("desk_clock_prefs", Context.MODE_PRIVATE) }
-
+    val defaultLanguageTag = remember { systemLanguageTag(context) }
     var burnInProtectionEnabled by remember {
         mutableStateOf(prefs.getBoolean("pref_burn_in_enabled", true))
     }
@@ -2524,6 +2592,7 @@ fun DeskClockScreen(
     var showBattery by remember { mutableStateOf(prefs.getBoolean("pref_show_battery", true)) }
     var showCornerDate by remember { mutableStateOf(prefs.getBoolean("pref_show_corner_date", true)) }
     var smoothSecondHand by remember { mutableStateOf(prefs.getBoolean("pref_smooth_second_hand", false)) }
+    var languageTag by remember { mutableStateOf(prefs.getString("pref_language_tag", null) ?: defaultLanguageTag) }
     var showHingeAngle by remember { mutableStateOf(prefs.getBoolean("pref_show_hinge_angle", false)) }
     var manualBrightness by remember { mutableStateOf(prefs.getBoolean("pref_manual_brightness", false)) }
     var brightnessValue by remember { mutableFloatStateOf(prefs.getFloat("pref_brightness_val", 0.6f)) }
@@ -2554,12 +2623,13 @@ fun DeskClockScreen(
 
     var isUiLocked by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(is24Hour, showBattery, showCornerDate, smoothSecondHand, showHingeAngle, manualBrightness, brightnessValue, timeoutMillis, layoutMode, weatherEnabled, isFahrenheit, burnInProtectionEnabled, showCalendarEvents) {
+    LaunchedEffect(is24Hour, showBattery, showCornerDate, smoothSecondHand, languageTag, showHingeAngle, manualBrightness, brightnessValue, timeoutMillis, layoutMode, weatherEnabled, isFahrenheit, burnInProtectionEnabled, showCalendarEvents) {
         prefs.edit()
             .putBoolean("pref_24_hour", is24Hour)
             .putBoolean("pref_show_battery", showBattery)
             .putBoolean("pref_show_corner_date", showCornerDate)
             .putBoolean("pref_smooth_second_hand", smoothSecondHand)
+            .putString("pref_language_tag", languageTag)
             .putBoolean("pref_show_hinge_angle", showHingeAngle)
             .putBoolean("pref_manual_brightness", manualBrightness)
             .putFloat("pref_brightness_val", brightnessValue)
@@ -2944,8 +3014,18 @@ fun DeskClockScreen(
                 smoothSecondHand = smoothSecondHand,
                 onShowCornerDateChange = { showCornerDate = it },
                 onSmoothSecondHandChange = { smoothSecondHand = it },
-                showHingeAngle = showHingeAngle,
-                onShowHingeAngleChange = { showHingeAngle = it },
+                                  languageTag = languageTag,
+                 onLanguageChange = { selectedTag ->
+                     languageTag = selectedTag
+                     prefs.edit().putString("pref_language_tag", selectedTag).apply()
+                     val locale = Locale.forLanguageTag(selectedTag)
+                     Locale.setDefault(locale)
+                     val configuration = context.resources.configuration.apply { setLocale(locale) }
+                     context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
+                     (context as? Activity)?.recreate()
+                 },
+                 showHingeAngle = showHingeAngle,
+                 onShowHingeAngleChange = { showHingeAngle = it },
                 hasHingeSensor = hasHingeSensor,
                 manualBrightness = manualBrightness,
                 onManualBrightnessChange = { manualBrightness = it },
@@ -4960,6 +5040,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val prefs = getSharedPreferences("desk_clock_prefs", Context.MODE_PRIVATE)
+        val savedLanguageTag = prefs.getString("pref_language_tag", null)
+        val languageTag = savedLanguageTag ?: systemLanguageTag(this)
+        val locale = Locale.forLanguageTag(languageTag)
+        Locale.setDefault(locale)
+        resources.updateConfiguration(resources.configuration.apply { setLocale(locale) }, resources.displayMetrics)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
