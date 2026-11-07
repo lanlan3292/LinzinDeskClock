@@ -3787,7 +3787,7 @@ fun AnalogClockFace(
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
 
     var analogStyleIndex by remember {
-        mutableIntStateOf(prefs.getInt("pref_analog_style_idx", 0).coerceIn(0, 2))
+        mutableIntStateOf(prefs.getInt("pref_analog_style_idx", 0).coerceIn(0, 3))
     }
 
     var showSeconds by remember {
@@ -3829,7 +3829,9 @@ fun AnalogClockFace(
     val currentBgColor = when (analogStyleIndex) {
         0 -> Color(0xFFEED55E)
         1 -> Color(0xFF0D0D11)
-        else -> Color(0xFF161413)
+        2 -> Color(0xFF161413)
+        3 -> Color(0xFF000000)
+        else -> Color(0xFF000000)
     }
 
     Box(
@@ -3872,7 +3874,7 @@ fun AnalogClockFace(
                         if (!isUiLocked && !movedTooMuch && elapsed in 30L..450L) {
                             when (maxPointers) {
                                 2 -> {
-                                    analogStyleIndex = (analogStyleIndex + 1) % 3
+                                    analogStyleIndex = (analogStyleIndex + 1) % 4
                                     prefs.edit().putInt("pref_analog_style_idx", analogStyleIndex).apply()
                                     lastSingleTapTime = 0L
                                 }
@@ -4301,6 +4303,57 @@ fun AnalogClockFace(
                         drawCircle(color = lollipopRed, radius = 2.8.dp.toPx(), center = Offset(cx, cy))
                     }
                 }
+                3 -> {
+                    val tickRed = Color(0xFFE53935)
+                    val handWhite = Color(0xFFF5F5F5)
+                    val edgeInset = 0f
+                    for (i in 0 until 60) {
+                        val angleDeg = i * 6f - 90f
+                        val angleRad = (angleDeg * (PI / 180f)).toFloat()
+                        val ux = cos(angleRad)
+                        val uy = sin(angleRad)
+                        val tx = if (ux > 0.00001f) (width / 2f - edgeInset) / ux else if (ux < -0.00001f) (-width / 2f + edgeInset) / ux else Float.MAX_VALUE
+                        val ty = if (uy > 0.00001f) (height / 2f - edgeInset) / uy else if (uy < -0.00001f) (-height / 2f + edgeInset) / uy else Float.MAX_VALUE
+                        val t = minOf(tx, ty)
+                        val major = i % 5 == 0
+                        val start = Offset(cx + t * ux, cy + t * uy)
+                        // 按刻度在对应边缘上的位置线性变化：边缘中点最短，角落最长。
+                        val edgePosition = if (kotlin.math.abs(ux) > kotlin.math.abs(uy)) {
+                            (kotlin.math.abs(start.y - cy) / (height / 2f)).coerceIn(0f, 1f)
+                        } else {
+                            (kotlin.math.abs(start.x - cx) / (width / 2f)).coerceIn(0f, 1f)
+                        }
+                        val length = if (major) {
+                            24.dp.toPx() + 24.dp.toPx() * edgePosition
+                        } else {
+                            12.dp.toPx() + 14.dp.toPx() * edgePosition
+                        }
+                        val tickColor = if (major) tickRed else Color.White
+                        val end = Offset(start.x - length * ux, start.y - length * uy)
+                        drawLine(tickColor, start, end, if (major) 3.5.dp.toPx() else 1.7.dp.toPx(), StrokeCap.Square)
+                    }
+                    val digitHeight = (minOf(width, height) * 0.16f).coerceIn(38.dp.toPx(), 54.dp.toPx())
+                    fun drawNumber(painter: androidx.compose.ui.graphics.painter.Painter, x: Float, y: Float) {
+                        val aspect = if (painter.intrinsicSize.height > 0) painter.intrinsicSize.width / painter.intrinsicSize.height else 0.65f
+                        val digitWidth = digitHeight * aspect
+                        translate(left = x - digitWidth / 2f, top = y - digitHeight / 2f) { with(painter) { draw(size = Size(digitWidth, digitHeight), colorFilter = ColorFilter.tint(Color.White)) } }
+                    }
+                    val numberInset = 80.dp.toPx()
+                    drawNumber(painterAbw12, cx, numberInset)
+                    drawNumber(painterAbw6, cx, height - numberInset)
+                    drawNumber(painterAbw9, numberInset, cy)
+                    drawNumber(painterAbw3, width - numberInset, cy)
+                    val hourRad = (hourAngleDeg * (PI / 180f)).toFloat()
+                    val minRad = (minAngleDeg * (PI / 180f)).toFloat()
+                    drawLine(handWhite, Offset(cx, cy), Offset(cx + baseRadius * 0.44f * cos(hourRad), cy + baseRadius * 0.44f * sin(hourRad)), 8.dp.toPx(), StrokeCap.Round)
+                    drawLine(handWhite, Offset(cx, cy), Offset(cx + baseRadius * 0.66f * cos(minRad), cy + baseRadius * 0.66f * sin(minRad)), 5.5.dp.toPx(), StrokeCap.Round)
+                    if (showSeconds) {
+                        val secRad = (secAngleDeg * (PI / 180f)).toFloat()
+                        drawLine(tickRed, Offset(cx - 16.dp.toPx() * cos(secRad), cy - 16.dp.toPx() * sin(secRad)), Offset(cx + baseRadius * 0.76f * cos(secRad), cy + baseRadius * 0.76f * sin(secRad)), 2.dp.toPx(), StrokeCap.Round)
+                    }
+                    drawCircle(handWhite, 8.dp.toPx(), Offset(cx, cy))
+                    if (showSeconds) drawCircle(tickRed, 3.5.dp.toPx(), Offset(cx, cy))
+                }
             }
         }
 
@@ -4308,6 +4361,7 @@ fun AnalogClockFace(
             val dateTextColor = when (analogStyleIndex) {
                 0 -> Color(0xFF222222)
                 1 -> Color(0xFF8E8E98)
+                3 -> Color.White
                 else -> Color(0xFF9E8F85)
             }
             Text(
