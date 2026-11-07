@@ -1652,6 +1652,8 @@ fun ClockSettingsDialog(
     onShowBatteryChange: (Boolean) -> Unit,
     showCornerDate: Boolean,
     onShowCornerDateChange: (Boolean) -> Unit,
+    smoothSecondHand: Boolean,
+    onSmoothSecondHandChange: (Boolean) -> Unit,
     showHingeAngle: Boolean,
     onShowHingeAngleChange: (Boolean) -> Unit,
     hasHingeSensor: Boolean = true,
@@ -1993,6 +1995,34 @@ fun ClockSettingsDialog(
                             onCheckedChange = null,
                             enabled = hasHingeSensor
                         )
+                    }
+
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF33333A)))
+
+                    // 5. 秒針平滑轉動
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onSmoothSecondHandChange(!smoothSecondHand) }
+                            .padding(vertical = 12.dp, horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.pref_smooth_second_title),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = stringResource(R.string.pref_smooth_second_desc),
+                                fontSize = 13.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        Switch(checked = smoothSecondHand, onCheckedChange = null)
                     }
 
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF33333A)))
@@ -2493,6 +2523,7 @@ fun DeskClockScreen(
     var is24Hour by remember { mutableStateOf(prefs.getBoolean("pref_24_hour", false)) }
     var showBattery by remember { mutableStateOf(prefs.getBoolean("pref_show_battery", true)) }
     var showCornerDate by remember { mutableStateOf(prefs.getBoolean("pref_show_corner_date", true)) }
+    var smoothSecondHand by remember { mutableStateOf(prefs.getBoolean("pref_smooth_second_hand", false)) }
     var showHingeAngle by remember { mutableStateOf(prefs.getBoolean("pref_show_hinge_angle", false)) }
     var manualBrightness by remember { mutableStateOf(prefs.getBoolean("pref_manual_brightness", false)) }
     var brightnessValue by remember { mutableFloatStateOf(prefs.getFloat("pref_brightness_val", 0.6f)) }
@@ -2523,11 +2554,12 @@ fun DeskClockScreen(
 
     var isUiLocked by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(is24Hour, showBattery, showCornerDate, showHingeAngle, manualBrightness, brightnessValue, timeoutMillis, layoutMode, weatherEnabled, isFahrenheit, burnInProtectionEnabled, showCalendarEvents) {
+    LaunchedEffect(is24Hour, showBattery, showCornerDate, smoothSecondHand, showHingeAngle, manualBrightness, brightnessValue, timeoutMillis, layoutMode, weatherEnabled, isFahrenheit, burnInProtectionEnabled, showCalendarEvents) {
         prefs.edit()
             .putBoolean("pref_24_hour", is24Hour)
             .putBoolean("pref_show_battery", showBattery)
             .putBoolean("pref_show_corner_date", showCornerDate)
+            .putBoolean("pref_smooth_second_hand", smoothSecondHand)
             .putBoolean("pref_show_hinge_angle", showHingeAngle)
             .putBoolean("pref_manual_brightness", manualBrightness)
             .putFloat("pref_brightness_val", brightnessValue)
@@ -2742,6 +2774,7 @@ fun DeskClockScreen(
                     foldState = foldState,
                     is24Hour = is24Hour,
                     showCornerDate = showCornerDate,
+                    smoothSecondHand = smoothSecondHand,
                     showHingeAngle = showHingeAngle,
                     showBattery = showBattery,
                     batteryState = batteryState,
@@ -2766,6 +2799,7 @@ fun DeskClockScreen(
                             foldState = foldState,
                             is24Hour = is24Hour,
                             showCornerDate = showCornerDate,
+                            smoothSecondHand = smoothSecondHand,
                             showHingeAngle = showHingeAngle,
                             showBattery = showBattery,
                             batteryState = batteryState,
@@ -2828,6 +2862,7 @@ fun DeskClockScreen(
                             foldState = foldState,
                             is24Hour = is24Hour,
                             showCornerDate = showCornerDate,
+                            smoothSecondHand = smoothSecondHand,
                             showHingeAngle = showHingeAngle,
                             showBattery = showBattery,
                             batteryState = batteryState,
@@ -2906,7 +2941,9 @@ fun DeskClockScreen(
                 showBattery = showBattery,
                 onShowBatteryChange = { showBattery = it },
                 showCornerDate = showCornerDate,
+                smoothSecondHand = smoothSecondHand,
                 onShowCornerDateChange = { showCornerDate = it },
+                onSmoothSecondHandChange = { smoothSecondHand = it },
                 showHingeAngle = showHingeAngle,
                 onShowHingeAngleChange = { showHingeAngle = it },
                 hasHingeSensor = hasHingeSensor,
@@ -2995,6 +3032,7 @@ fun MainClockSection(
     foldState: String,
     is24Hour: Boolean,
     showCornerDate: Boolean,
+    smoothSecondHand: Boolean,
     showHingeAngle: Boolean,
     showBattery: Boolean,
     batteryState: BatteryState,
@@ -3007,6 +3045,7 @@ fun MainClockSection(
             foldState = foldState,
             is24Hour = is24Hour,
             showCornerDate = showCornerDate,
+            smoothSecondHand = smoothSecondHand,
             showHingeAngle = showHingeAngle,
             isUiLocked = isUiLocked,
             modifier = Modifier.fillMaxSize()
@@ -3030,6 +3069,7 @@ fun MainClockPager(
     foldState: String,
     is24Hour: Boolean,
     showCornerDate: Boolean,
+    smoothSecondHand: Boolean,
     showHingeAngle: Boolean,
     isUiLocked: Boolean,
     modifier: Modifier = Modifier
@@ -3050,6 +3090,7 @@ fun MainClockPager(
             1 -> AnalogClockFace(
                 foldState = foldState,
                 showCornerDate = showCornerDate,
+                smoothSecondHand = smoothSecondHand,
                 showHingeAngle = showHingeAngle,
                 isUiLocked = isUiLocked
             )
@@ -3777,6 +3818,7 @@ fun DigitalClockFace(
 fun AnalogClockFace(
     foldState: String,
     showCornerDate: Boolean = true,
+    smoothSecondHand: Boolean = false,
     showHingeAngle: Boolean = true,
     isUiLocked: Boolean = false,
     modifier: Modifier = Modifier
@@ -3809,10 +3851,10 @@ fun AnalogClockFace(
     val painterZmg3 = painterResource(id = R.drawable.zmg_3)
     val painterZmg9 = painterResource(id = R.drawable.zmg_9)
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(smoothSecondHand) {
         while (true) {
             currentTime = System.currentTimeMillis()
-            delay(1000L)
+            delay(if (smoothSecondHand) 16L else 1000L)
         }
     }
 
@@ -3903,7 +3945,11 @@ fun AnalogClockFace(
 
             val hourAngleDeg = (hours + minutes / 60f + seconds / 3600f) * 30f - 90f
             val minAngleDeg = (minutes + seconds / 60f) * 6f - 90f
-            val secAngleDeg = seconds * 6f - 90f
+            val secAngleDeg = if (smoothSecondHand) {
+                (currentTime % 60000L) / 1000f * 6f - 90f
+            } else {
+                seconds * 6f - 90f
+            }
 
             when (analogStyleIndex) {
                 0 -> {
@@ -4338,7 +4384,7 @@ fun AnalogClockFace(
                         val digitWidth = digitHeight * aspect
                         translate(left = x - digitWidth / 2f, top = y - digitHeight / 2f) { with(painter) { draw(size = Size(digitWidth, digitHeight), colorFilter = ColorFilter.tint(Color.White)) } }
                     }
-                    val numberInset = 80.dp.toPx()
+                    val numberInset = 64.dp.toPx()
                     drawNumber(painterAbw12, cx, numberInset)
                     drawNumber(painterAbw6, cx, height - numberInset)
                     drawNumber(painterAbw9, numberInset, cy)
